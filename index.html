@@ -8,11 +8,19 @@
 :root{--bg:#eef1f4;--ink:#17202a;--mute:#5b6773;--line:#c9d1d9;--acc:#1f5eff;--card:#fff}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:560px;margin:0 auto;padding:28px 18px 56px}
+main{max-width:560px;margin:0 auto;padding:18px 18px 56px}
+button,input{font:inherit}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:18px;font-size:14px;color:var(--mute)}
 h1{font:600 30px/1.15 Georgia,"Times New Roman",serif;margin:0 0 10px;letter-spacing:-.01em}
+h2{font:600 21px/1.2 Georgia,serif;margin:0 0 10px}
 .sub{color:var(--mute);margin:0 0 22px;max-width:46ch}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:6px;padding:10px 16px;font-weight:600;cursor:pointer}
+.btn.alt{background:none;color:var(--acc);border:1.5px solid var(--acc)}
+.bar .btn{padding:6px 12px;font-size:14px}
+input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;background:var(--card);margin-bottom:8px}
+button:focus-visible,input:focus-visible,.drop:focus-within{outline:3px solid #7aa2ff;outline-offset:2px}
 .drop{display:block;border:2px dashed var(--acc);border-radius:6px;padding:22px 16px;text-align:center;cursor:pointer;background:var(--card);font-weight:600;color:var(--acc)}
-.drop:focus-within,.drop:hover{background:#e6edff}
+.drop:hover{background:#e6edff}
 .drop small{display:block;font-weight:400;color:var(--mute);margin-top:4px}
 #status{min-height:1.5em;color:var(--mute);margin:10px 0 0;font-size:14px}
 #out{margin-top:20px}
@@ -26,29 +34,36 @@ canvas{width:100%;height:auto;max-height:70vh;object-fit:contain}
 .ruler i{position:absolute;top:0;width:1px;height:10px;background:var(--ink)}
 .ruler i:nth-child(odd){height:16px}
 .ruler b{position:absolute;top:-2px;transform:translateX(-50%);width:0;height:0;border:8px solid transparent;border-top:14px solid var(--acc);border-bottom:0;transition:left .8s cubic-bezier(.2,.8,.2,1)}
-.ticks{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin-top:-14px;padding:0 0}
-.ticks{margin-top:18px}
+.ticks{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin-top:18px}
 #warn{background:#fff4d6;border-left:4px solid #c98a00;padding:10px 12px;margin:16px 0 0;font-size:14px;border-radius:0 4px 4px 0}
-ul{list-style:none;padding:0;margin:22px 0 0}
-li{padding:12px 0;border-top:1px solid var(--line)}
+#rows{list-style:none;padding:0;margin:22px 0 0}
+#rows li{padding:12px 0;border-top:1px solid var(--line)}
 .r{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
 .r em{font-style:normal;font-weight:600;font-variant-numeric:tabular-nums}
 .ideal{font-size:13px;color:var(--mute)}
-.bar{height:6px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
-.bar u{display:block;height:100%;background:var(--acc);border-radius:3px}
-.note{font-size:13px;color:var(--mute);margin-top:22px}
+.bar2{height:6px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
+.bar2 u{display:block;height:100%;background:var(--acc);border-radius:3px}
+.note,.msg{font-size:13px;color:var(--mute);margin:8px 0 0}
+.box{margin-top:28px;padding-top:18px;border-top:2px solid var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+#board{margin:0;padding:0;list-style:none;counter-reset:n}
+#board li{counter-increment:n;display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+#board li::before{content:counter(n);width:1.6em;color:var(--mute);font-variant-numeric:tabular-nums}
+#board li span{flex:1;overflow-wrap:anywhere}
 @media (prefers-reduced-motion:reduce){.ruler b{transition:none}}
 </style>
 </head>
 <body>
 <main>
+<div class="bar"><span id="who">Mehmon</span><button class="btn alt" id="authBtn">Kirish</button></div>
 <h1>Yuzingizni raqamlar bilan o'lchang</h1>
-<p class="sub">Rasm qurilmangizdan chiqmaydi: tahlil to'liq brauzerning o'zida bajariladi. Natija ko'ngilochar, ilmiy emas.</p>
+<p class="sub">Rasm qurilmangizdan chiqmaydi: tahlil to'liq brauzerning o'zida bajariladi. Reytingga faqat laqabingiz va ballingiz yuboriladi. Natija ko'ngilochar, ilmiy emas.</p>
 <label class="drop" for="f">Rasm tanlang yoki selfi oling
 <small>Old tomondan, neytral yuz, tekis yorug'lik, sochlar peshonani yopmasin</small>
 <input id="f" type="file" accept="image/*" hidden>
 </label>
-<p id="status" role="status"></p>
+<p id="status" role="status">Sahifa yuklandi…</p>
+
 <section id="out" hidden>
 <div class="stage"><canvas id="c"></canvas></div>
 <div class="score">
@@ -57,26 +72,110 @@ li{padding:12px 0;border-top:1px solid var(--line)}
 <div class="ruler" id="ruler"><b id="mark" style="left:0"></b></div>
 <div class="ticks"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></div>
 </div>
+<button class="btn" id="send">Natijani reytingga qo'shish</button>
+<p class="msg" id="sendMsg"></p>
 <p id="warn" hidden></p>
 <ul id="rows"></ul>
 <p class="note">Ideal oraliqlar estetika adabiyotidagi taxminiy qiymatlar. Ular odamning qadrini ham, jozibasini ham belgilamaydi. Peshona chizig'i o'lchanmaydi, chunki sochlar uni yashiradi.</p>
 </section>
+
+<section class="box" id="auth" hidden>
+<h2>Kirish yoki ro'yxatdan o'tish</h2>
+<input id="em" type="email" placeholder="Email" autocomplete="email">
+<input id="pw" type="password" placeholder="Parol (kamida 6 belgi)" autocomplete="current-password">
+<input id="nk" placeholder="Laqab (faqat ro'yxatdan o'tishda, 2–20 belgi)" maxlength="20">
+<div class="row"><button class="btn" id="login">Kirish</button><button class="btn alt" id="signup">Ro'yxatdan o'tish</button></div>
+<p class="msg" id="authMsg"></p>
+</section>
+
+<section class="box">
+<h2>Reyting jadvali</h2>
+<ol id="board"></ol>
+<p class="msg" id="boardMsg">Yuklanmoqda…</p>
+</section>
 </main>
+
 <script type="module">
-import {FaceLandmarker,FilesetResolver} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
-const $=s=>document.querySelector(s),st=$('#status');
-let lm;
-(async()=>{
-  st.textContent="Model yuklanmoqda…";
+const $=s=>document.querySelector(s),st=t=>{$('#status').textContent=t};
+const SB="https://bsdkaxkljdbbssnbwilb.supabase.co",KEY="sb_publishable_Mxgsft99S0z6pekQfAy-Hw__Jq6D_Et";
+let lm,last=0,S=null;
+try{S=JSON.parse(localStorage.getItem("psl.s"))}catch(e){}
+
+/* ---------- Model ---------- */
+const MODEL="https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
+const BASES=["https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14","https://unpkg.com/@mediapipe/tasks-vision@0.10.14"];
+const tmo=(p,ms,m)=>Promise.race([p,new Promise((_,r)=>setTimeout(()=>r(new Error(m+": vaqt tugadi")),ms))]);
+async function step(m,p){const t0=Date.now(),i=setInterval(()=>st(m+" "+Math.round((Date.now()-t0)/1000)+" s"),1000);st(m);try{return await p}finally{clearInterval(i)}}
+async function getModel(){
+  const r=await fetch(MODEL);if(!r.ok)throw new Error("Model fayli: "+r.status);
+  const tot=+r.headers.get("content-length")||0,rd=r.body.getReader(),ps=[];let got=0;
+  for(;;){const{done,value}=await rd.read();if(done)break;ps.push(value);got+=value.length;st("Model fayli: "+(got/1048576).toFixed(1)+(tot?" / "+(tot/1048576).toFixed(1):"")+" MB")}
+  const b=new Uint8Array(got);let o=0;for(const p of ps){b.set(p,o);o+=p.length}return b}
+async function loadModel(){
+  let err;
   try{
-    const fs=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
-    lm=await FaceLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"},runningMode:"IMAGE",numFaces:1});
-    st.textContent="Tayyor. Rasm tanlang.";
-  }catch(e){st.textContent="Model yuklanmadi. Internetni tekshirib, sahifani yangilang."}
-})();
+    const buf=await tmo(getModel(),120000,"Model fayli");
+    for(const base of BASES){
+      try{
+        const m=await step("Kutubxona yuklanmoqda…",tmo(import(base+"/vision_bundle.mjs"),30000,"Kutubxona"));
+        const fs=await m.FilesetResolver.forVisionTasks(base+"/wasm");
+        lm=await step("Dvigatel ishga tushmoqda…",tmo(m.FaceLandmarker.createFromOptions(fs,{baseOptions:{modelAssetBuffer:buf},runningMode:"IMAGE",numFaces:1}),90000,"Dvigatel"));
+        st("Tayyor. Rasm tanlang.");return
+      }catch(e){err=e;console.warn(base,e)}
+    }
+  }catch(e){err=e}
+  st("Yuklanmadi — "+((err&&err.message)||err)+". Boshqa tarmoq bilan urinib, sahifani yangilang.")
+}
+loadModel();
+
+/* ---------- Supabase (to'g'ridan-to'g'ri so'rovlar) ---------- */
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const tr=s=>/already registered/i.test(s)?"Bu email allaqachon ro'yxatdan o'tgan. Kirish tugmasini bosing.":/invalid login/i.test(s)?"Email yoki parol noto'g'ri.":/at least/i.test(s)?"Parol kamida 6 belgi bo'lsin.":/rate limit/i.test(s)?"Juda ko'p urinish. Birozdan keyin qayta urining.":/valid email|invalid format/i.test(s)?"Email noto'g'ri yozilgan.":s;
+async function api(path,opt={},tok){
+  const h={apikey:KEY,"Content-Type":"application/json"};if(tok)h.Authorization="Bearer "+tok;
+  const r=await fetch(SB+path,{...opt,headers:h}),t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+  if(!r.ok)throw new Error((j&&(j.msg||j.message||j.error_description||j.error))||("Xato "+r.status));
+  return j}
+const mk=j=>({at:j.access_token,rt:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000-60000,nick:(j.user&&j.user.user_metadata&&j.user.user_metadata.nickname)||((j.user&&j.user.email)||"").split("@")[0]});
+function save(s){S=s;try{s?localStorage.setItem("psl.s",JSON.stringify(s)):localStorage.removeItem("psl.s")}catch(e){}ui()}
+function ui(){$('#who').textContent=S?S.nick:"Mehmon";$('#authBtn').textContent=S?"Chiqish":"Kirish"}
+async function tok(){
+  if(!S)return null;
+  if(Date.now()>S.exp){try{const j=await api("/auth/v1/token?grant_type=refresh_token",{method:"POST",body:JSON.stringify({refresh_token:S.rt})});const n=mk(j);n.nick=S.nick;save(n)}catch(e){save(null);return null}}
+  return S.at}
+async function doAuth(up){
+  const email=$('#em').value.trim(),password=$('#pw').value,nick=$('#nk').value.trim(),m=$('#authMsg');
+  if(up&&(nick.length<2||nick.length>20)){m.textContent="Laqab 2–20 belgi bo'lsin.";return}
+  m.textContent="Kuting…";
+  try{
+    const j=up?await api("/auth/v1/signup",{method:"POST",body:JSON.stringify({email,password,data:{nickname:nick}})}):await api("/auth/v1/token?grant_type=password",{method:"POST",body:JSON.stringify({email,password})});
+    if(!j.access_token){m.textContent="Emailingizga tasdiqlash xati yuborildi.";return}
+    save(mk(j));m.textContent="";$('#auth').hidden=true;$('#pw').value=""
+  }catch(e){m.textContent=tr(e.message)}}
+async function board(){
+  const o=$('#board'),m=$('#boardMsg');
+  try{
+    const j=await api("/rest/v1/scores?select=nickname,best&order=best.desc,updated_at.asc&limit=20");
+    o.innerHTML=j.map(r=>`<li><span>${esc(r.nickname)}</span><b>${Number(r.best).toFixed(1)}</b></li>`).join("");
+    m.textContent=j.length?"":"Hali hech kim yo'q. Birinchi bo'ling."
+  }catch(e){m.textContent="Jadval yuklanmadi: "+e.message}}
+$('#authBtn').onclick=()=>{if(S)save(null);else $('#auth').hidden=!$('#auth').hidden};
+$('#login').onclick=()=>doAuth(false);
+$('#signup').onclick=()=>doAuth(true);
+$('#send').onclick=async()=>{
+  const m=$('#sendMsg');
+  if(!S){m.textContent="Reytingga qo'shish uchun avval kiring.";$('#auth').hidden=false;$('#auth').scrollIntoView({behavior:"smooth"});return}
+  m.textContent="Yuborilmoqda…";
+  try{
+    const t=await tok();if(!t)throw new Error("Qaytadan kiring.");
+    await api("/rest/v1/rpc/submit_score",{method:"POST",body:JSON.stringify({p_nickname:S.nick,p_score:last})},t);
+    m.textContent="Reytingga qo'shildi. Eng yuqori ballingiz saqlanadi.";board()
+  }catch(e){m.textContent="Xato: "+tr(e.message)}};
+ui();board();
+
+/* ---------- Yuz tahlili ---------- */
 const ru=$('#ruler');for(let i=0;i<8;i++){const t=document.createElement('i');t.style.left=(i/7*100)+'%';ru.prepend(t)}
 const band=(v,lo,hi,tol)=>v<lo?Math.max(0,1-(lo-v)/tol):v>hi?Math.max(0,1-(v-hi)/tol):1;
-
 function analyze(P,w,h){
   const px=i=>({x:P[i].x*w,y:P[i].y*h}),a=px(10),b=px(152);
   const f=Math.PI/2-Math.atan2(b.y-a.y,b.x-a.x),c=Math.cos(f),s=Math.sin(f),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
@@ -102,28 +201,28 @@ function analyze(P,w,h){
   const A=T(1).x-T(33).x,B=T(263).x-T(1).x;
   return{m,psl:Math.min(8,Math.max(1,Math.round((1+7*Math.pow(sc,1.4))*10)/10)),yaw:Math.abs(A-B)/(A+B)};
 }
-
 $('#f').onchange=async e=>{
   const file=e.target.files[0];if(!file)return;
-  if(!lm){st.textContent="Model hali yuklanmadi, biroz kuting.";return}
-  st.textContent="Tahlil qilinmoqda…";
-  const bmp=await createImageBitmap(file,{imageOrientation
-              const k=Math.min(1,720/Math.max(bmp.width,bmp.height)),cv=$('#c');
+  if(!lm){st("Model hali yuklanmadi, yuqoridagi holatni kuting.");return}
+  st("Tahlil qilinmoqda…");
+  const bmp=await createImageBitmap(file,{imageOrientation:"from-image"});
+  const k=Math.min(1,720/Math.max(bmp.width,bmp.height)),cv=$('#c');
   const w=cv.width=Math.round(bmp.width*k),h=cv.height=Math.round(bmp.height*k),g=cv.getContext('2d');
   g.drawImage(bmp,0,0,w,h);
   const r=lm.detect(cv);
-  if(!r.faceLandmarks.length){$('#out').hidden=true;st.textContent="Yuz topilmadi. Yuz to'liq ko'rinadigan, old tomondan olingan rasm tanlang.";return}
+  if(!r.faceLandmarks.length){$('#out').hidden=true;st("Yuz topilmadi. Yuz to'liq ko'rinadigan, old tomondan olingan rasm tanlang.");return}
   const P=r.faceLandmarks[0],res=analyze(P,w,h);
   g.strokeStyle="#4d8bff";g.lineWidth=1.5;g.setLineDash([6,5]);g.beginPath();g.moveTo(P[10].x*w,P[10].y*h);g.lineTo(P[152].x*w,P[152].y*h);g.stroke();g.setLineDash([]);
   g.fillStyle="#fff";g.strokeStyle="#1f5eff";g.lineWidth=2;
   [10,152,33,133,362,263,234,454,172,397,2,13,0,1,129,358,105,334].forEach(i=>{g.beginPath();g.arc(P[i].x*w,P[i].y*h,3.5,0,7);g.fill();g.stroke()});
+  last=res.psl;$('#sendMsg').textContent="";
   $('#big').innerHTML=res.psl.toFixed(1)+"<span>/ 8</span>";
   const v=res.psl;$('#tier').textContent=v<3?"Past":v<4?"O'rtadan past":v<5?"O'rtacha":v<6?"O'rtadan yuqori":v<7?"Yuqori":"Juda yuqori";
   $('#mark').style.left=((v-1)/7*100)+"%";
-  $('#rows').innerHTML=res.m.map(r=>`<li><div class="r"><span>${r[0]}</span><em>${r[1]}</em></div><div class="ideal">Ideal: ${r[2]}</div><div class="bar"><u style="width:${Math.round(r[3]*100)}%"></u></div></li>`).join("");
+  $('#rows').innerHTML=res.m.map(r=>`<li><div class="r"><span>${r[0]}</span><em>${r[1]}</em></div><div class="ideal">Ideal: ${r[2]}</div><div class="bar2"><u style="width:${Math.round(r[3]*100)}%"></u></div></li>`).join("");
   const wn=$('#warn');wn.hidden=res.yaw<=.15;if(!wn.hidden)wn.textContent="Yuz biroz burilgan ko'rinadi. Natija noaniq bo'lishi mumkin: kameraga to'g'ri qarab, qayta suratga oling.";
-  $('#out').hidden=false;st.textContent="";
+  $('#out').hidden=false;st("Tayyor. Boshqa rasm tanlashingiz mumkin.");
 };
 </script>
 </body>
-</html>                            
+</html>
